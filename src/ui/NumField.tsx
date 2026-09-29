@@ -14,7 +14,9 @@ export function NumField({
   min = 0,
   autoFocus,
   testId,
+  ariaLabel,
 }: {
+  ariaLabel?: string;
   label?: string;
   value: number | null | undefined;
   onChange: (v: number | null) => void;
@@ -47,7 +49,7 @@ export function NumField({
         value={text}
         autoFocus={autoFocus}
         data-testid={testId}
-        aria-label={label}
+        aria-label={ariaLabel ?? label}
         onFocus={(e) => (e.currentTarget as HTMLInputElement).select()}
         onInput={(e) => {
           const t = (e.currentTarget as HTMLInputElement).value.replace(/[^0-9.,]/g, '');

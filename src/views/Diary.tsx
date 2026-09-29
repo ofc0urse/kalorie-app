@@ -12,6 +12,7 @@ import { bumpData, dataVersion, settingsStore } from '../settings';
 import { diaryDate } from '../uiState';
 import { FoodSheet } from '../ui/FoodSheet';
 import { Icon } from '../ui/Icon';
+import { InstallHint } from '../ui/InstallHint';
 import { NumField } from '../ui/NumField';
 import { Sheet } from '../ui/Sheet';
 
@@ -102,6 +103,7 @@ export function DiaryView() {
         </button>
       )}
 
+      <InstallHint />
       <Summary totals={totals} goals={goals} />
 
       <div class="stack mt">

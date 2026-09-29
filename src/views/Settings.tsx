@@ -69,20 +69,22 @@ export function ProfileForm({ initial, onSave, submitLabel = 'Zapisz i przelicz'
         <select class="select" value={p.activity} onChange={(e) => set({ activity: (e.currentTarget as HTMLSelectElement).value as ActivityLevel })} data-testid="activity">
           {Object.entries(ACTIVITY).map(([k, a]) => (
             <option key={k} value={k}>
-              {a.label} – {a.hint}
+              {a.label}
             </option>
           ))}
         </select>
+        {p.activity && <small class="tiny muted">{ACTIVITY[p.activity].hint}</small>}
       </label>
       <label class="field">
         <span>Cel</span>
         <select class="select" value={p.goal} onChange={(e) => set({ goal: (e.currentTarget as HTMLSelectElement).value as GoalType })} data-testid="goal">
           {Object.entries(GOALS).map(([k, g]) => (
             <option key={k} value={k}>
-              {g.label} ({g.hint})
+              {g.label}
             </option>
           ))}
         </select>
+        {p.goal && <small class="tiny muted">{GOALS[p.goal].hint}</small>}
       </label>
       {result && (
         <div class="notice info" data-testid="goal-result">

@@ -30,6 +30,7 @@
   --safe-left: env(safe-area-inset-left, 0px);
   --safe-right: env(safe-area-inset-right, 0px);
   --tabbar-h: 64px;
+  --seg-on: #ffffff;
   --font: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
@@ -57,6 +58,7 @@
     --fiber: #5cc9b9;
     --water: #5fb4f0;
     --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+    --seg-on: #3a423c;
   }
 }
 
@@ -83,6 +85,7 @@
   --fiber: #5cc9b9;
   --water: #5fb4f0;
   --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  --seg-on: #3a423c;
 }
 
 /* ===== Baza ===== */
@@ -103,6 +106,7 @@ body {
 button, input, select, textarea { font: inherit; color: inherit; }
 /* 16px w polach – iOS nie powiększa widoku przy fokusie */
 input, select, textarea { font-size: 16px; }
+button, a, input, select, textarea, label { touch-action: manipulation; }
 button { cursor: pointer; }
 a { color: var(--accent); }
 h1, h2, h3 { margin: 0; line-height: 1.2; }
@@ -256,7 +260,7 @@ p { margin: 0; }
   color: var(--text-2);
   font-size: 0.9375rem;
 }
-.seg button[aria-pressed='true'] { background: var(--surface); color: var(--text); box-shadow: var(--shadow); }
+.seg button[aria-pressed='true'] { background: var(--seg-on); color: var(--text); box-shadow: var(--shadow); }
 .chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0 4px; scrollbar-width: none; }
 .chips::-webkit-scrollbar { display: none; }
 .chip {
@@ -305,6 +309,7 @@ p { margin: 0; }
   background: var(--surface-2);
   color: var(--text-2);
   vertical-align: middle;
+  white-space: nowrap;
 }
 .badge.off { background: #fff1d6; color: #8a5a00; }
 .badge.usda { background: #e2ecff; color: #2c4f9a; }
@@ -312,11 +317,19 @@ p { margin: 0; }
 .badge.recipe { background: #efe4fb; color: #6a3fa5; }
 .badge.ai { background: #fde7f1; color: #a0336a; }
 :root[data-theme='dark'] .badge.off, :root[data-theme='dark'] .badge.usda, :root[data-theme='dark'] .badge.recipe, :root[data-theme='dark'] .badge.ai { background: var(--surface-2); }
+:root[data-theme='dark'] .badge.off { color: #f0c060; }
+:root[data-theme='dark'] .badge.usda { color: #9db8f2; }
+:root[data-theme='dark'] .badge.recipe { color: #c8a8f2; }
+:root[data-theme='dark'] .badge.ai { color: #f29cc6; }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) .badge.off,
   :root:not([data-theme='light']) .badge.usda,
   :root:not([data-theme='light']) .badge.recipe,
   :root:not([data-theme='light']) .badge.ai { background: var(--surface-2); }
+  :root:not([data-theme='light']) .badge.off { color: #f0c060; }
+  :root:not([data-theme='light']) .badge.usda { color: #9db8f2; }
+  :root:not([data-theme='light']) .badge.recipe { color: #c8a8f2; }
+  :root:not([data-theme='light']) .badge.ai { color: #f29cc6; }
 }
 .empty { padding: 24px 8px; text-align: center; color: var(--text-2); }
 
@@ -521,3 +534,5 @@ p { margin: 0; }
 :root[data-theme='dark'] .toast { background: #2a302b; border: 1px solid #3b433c; }
 input[type='search']::-webkit-search-cancel-button,
 input[type='search']::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }
+.center-icon { margin: 0 auto; width: 36px; height: 36px; }
+.accent { color: var(--accent); }

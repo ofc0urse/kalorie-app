@@ -33,6 +33,8 @@ describe('wbudowana baza', () => {
     expect(searchLocal('kartofle', BASIC_FOODS)[0].name).toMatch(/Ziemniaki/);
     expect(searchLocal('losos', BASIC_FOODS)[0].name).toMatch(/Łosoś/);
     expect(searchLocal('schabowy', BASIC_FOODS)[0].name).toBe('Kotlet schabowy panierowany');
+    expect(searchLocal('owsiane', BASIC_FOODS)[0].name).toBe('Płatki owsiane');
+    expect(searchLocal('mleko', BASIC_FOODS)[0].name).toMatch(/^Mleko/);
   });
 });
 

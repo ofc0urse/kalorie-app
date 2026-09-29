@@ -28,9 +28,9 @@ export function searchLocal(q: string, pool: Food[], usage?: Map<string, number>
   if (!q.trim()) return [];
   const scored: { f: Food; s: number }[] = [];
   for (const f of pool) {
-    const hay = [f.name, ...(f.aliases ?? [])];
-    let s = 0;
-    for (const h of hay) s = Math.max(s, matchScore(h, q));
+    // dopasowanie nazwy ważniejsze niż synonimu
+    let s = matchScore(f.name, q);
+    for (const a of f.aliases ?? []) s = Math.max(s, matchScore(a, q) - 8);
     if (f.brand) s = Math.max(s, matchScore(`${f.name} ${f.brand}`, q) - 5);
     if (f.barcode && f.barcode === q.trim()) s = 200;
     if (s <= 0) continue;

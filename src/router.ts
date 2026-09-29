@@ -13,7 +13,12 @@ function parse(): Route {
 
 export const routeStore = new Store<Route>(parse());
 
-const sync = () => routeStore.set(parse());
+const sync = () => {
+  const prev = routeStore.get().path;
+  const next = parse();
+  routeStore.set(next);
+  if (next.path !== prev) window.scrollTo(0, 0);
+};
 window.addEventListener('popstate', sync);
 window.addEventListener('hashchange', sync);
 
@@ -34,7 +39,6 @@ export function navigate(path: string, params?: Record<string, string | number |
   if (replace) history.replaceState({ idx: currentIdx() }, '', hash);
   else history.pushState({ idx: currentIdx() + 1 }, '', hash);
   sync();
-  window.scrollTo(0, 0);
 }
 
 /** Wstecz w obrębie aplikacji; gdy nie ma dokąd wrócić – przejście do `fallback`. */

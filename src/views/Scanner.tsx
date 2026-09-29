@@ -116,7 +116,12 @@ export function ScannerView() {
       {phase === 'camera-error' && (
         <div class="notice error" role="alert" data-testid="camera-error">
           <Icon name="alert" class="sm" />
-          <div class="grow">{camError}</div>
+          <div class="grow stack" style={{ gap: 8 }}>
+            {camError}
+            <button class="btn small outline" style={{ alignSelf: 'flex-start' }} onClick={restart}>
+              Spróbuj ponownie
+            </button>
+          </div>
         </div>
       )}
       {phase === 'looking' && (

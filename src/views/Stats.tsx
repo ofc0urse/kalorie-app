@@ -40,7 +40,8 @@ export function StatsView() {
   const avgN: Nutrients = { kcal: avg.kcal / n, protein: avg.protein / n, fat: avg.fat / n, carbs: avg.carbs / n, fiber: avg.fiber / n };
   const goals = macroGoals(settings.kcalGoal, settings.macroSplit, settings.fiberGoal);
   const onTarget = logged.filter((d) => Math.abs(perDay.get(d)!.kcal - goals.kcal) <= goals.kcal * 0.1).length;
-  const avgWater = water.length ? water.reduce((s, w) => s + w.ml, 0) / range : 0;
+  const waterDays = water.filter((w) => w.ml > 0);
+  const avgWater = waterDays.length ? waterDays.reduce((s, w) => s + w.ml, 0) / waterDays.length : 0;
 
   const kcalPoints: Point[] = days.map((d) => ({
     key: d,

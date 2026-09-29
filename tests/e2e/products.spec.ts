@@ -30,6 +30,17 @@ test('wyszukiwanie bez polskich znaków w bazie wbudowanej i dodanie porcji', as
   await page.getByRole('button', { name: 'Gotowe – wróć do dziennika' }).click();
   await expect(page.getByTestId('meal-kcal-breakfast')).toHaveText('187 kcal');
   await expect(page.getByTestId('meal-breakfast').getByTestId('entry')).toContainText('2 × sztuka · 360 g');
+
+  // ostatnia ilość jest podpowiadana, ale nie nadpisuje tego, co użytkownik już wpisał
+  await page.getByTestId('add-snacks').click();
+  await page.getByTestId('search').fill('jablko');
+  await page.getByTestId('search-results').getByTestId('food-row').first().click();
+  await page.getByTestId('amount').fill('3');
+  await page.waitForTimeout(300);
+  await expect(page.getByTestId('amount')).toHaveValue('3');
+  await page.getByTestId('sheet-save').click();
+  await page.getByRole('button', { name: 'Gotowe – wróć do dziennika' }).click();
+  await expect(page.getByTestId('meal-snacks').getByTestId('entry')).toContainText('3 × sztuka · 540 g');
 });
 
 test('Open Food Facts: debounce, parametry zapytania i zapis produktu', async ({ page }) => {

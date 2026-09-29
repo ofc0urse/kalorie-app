@@ -32,9 +32,16 @@ Wpis w dzienniku przechowuje **kopię produktu** z chwili dodania – późniejs
 - **USDA FoodData Central:** `GET https://api.nal.usda.gov/fdc/v1/foods/search?api_key=…&query=…&dataType=Foundation,SR Legacy` – `foodNutrients[]` z `nutrientNumber` (208 kcal, 203 białko, 204 tłuszcz, 205 węglowodany, 291 błonnik). Klucz własny albo `DEMO_KEY`.
 - **Claude API:** Messages API z obrazem base64 i strukturalnym wyjściem JSON (`output_config.format`), model `claude-opus-5-5`.
 
-## Etapy
+## Etapy (wszystkie zrealizowane)
 1. Dziennik (posiłki, podsumowanie, nawigacja po dniach, woda, waga, cofanie, kopiowanie, statystyki, cel i ustawienia, kopia JSON).
 2. Baza produktów (wbudowana, OFF, USDA, własne, przepisy, ulubione, ostatnie).
 3. Skaner kodów kreskowych (ZXing, ręczny kod, dodawanie brakującego produktu).
 4. Zdjęcie/opis → AI przez Cloudflare Workera.
 5. Dopracowanie wyglądu, README.
+
+## Decyzje i założenia
+- Węglowodany wszędzie jako przyswajalne (bez błonnika) – jak na etykietach w UE; wartości z USDA są przeliczane.
+- Kody kreskowe normalizowane jak w Open Food Facts (UPC-A → EAN-13 z wiodącym zerem).
+- Wyszukiwanie w OFF z preferencją produktów z Polski (`countries:"en:poland"`); gdy brak wyników – wyszukiwanie globalne.
+- USDA tylko na żądanie (przycisk) – oszczędza limit `DEMO_KEY`.
+- Model AI: `claude-opus-5-5` z adaptive thinking i `effort: medium`; można zmienić w `worker/wrangler.toml`.

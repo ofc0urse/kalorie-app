@@ -163,7 +163,7 @@ export function AiEstimateView() {
             <img class="photo-preview" src={photo.dataUrl} alt="Zdjęcie posiłku" data-testid="photo-preview" />
           ) : (
             <div class="card center muted" style={{ padding: 32 }}>
-              <Icon name="camera" class="accent" />
+              <Icon name="camera" class="accent center-icon" />
               <p class="mt">Zrób zdjęcie talerza z góry lub pod kątem – najlepiej z widocznymi sztućcami dla skali.</p>
             </div>
           )}
@@ -251,7 +251,7 @@ export function AiEstimateView() {
                     />
                     <div class="row">
                       <div style={{ width: 120 }}>
-                        <NumField value={i.grams} onChange={(v) => setItems(items.map((x, j) => (j === idx ? { ...x, grams: v } : x)))} suffix="g" testId="ai-grams" label={`Gramy: ${i.name}`} />
+                        <NumField value={i.grams} onChange={(v) => setItems(items.map((x, j) => (j === idx ? { ...x, grams: v } : x)))} suffix="g" testId="ai-grams" ariaLabel={`Gramy: ${i.name}`} />
                       </div>
                       <span class={`conf ${i.confidence === 'manual' ? 'high' : i.confidence}`}>{CONF[i.confidence]}</span>
                     </div>

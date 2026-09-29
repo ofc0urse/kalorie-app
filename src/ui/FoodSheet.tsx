@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { getRecent, isFavorite, toggleFavorite } from '../db/db';
 import { addEntry, removeEntries, updateEntry } from '../diary';
 import { fmt0, fmt1, round1, scale } from '../lib/nutrition';
@@ -33,32 +33,37 @@ export function FoodSheet({
   const settings = useStore(settingsStore);
   const unit = food.unit === 'ml' ? 'ml' : 'g';
   const portions = useMemo(() => [{ label: unit, grams: 1 }, ...(food.portions ?? []).filter((p) => p.grams > 0)], [food]);
-  const [portionIdx, setPortionIdx] = useState(0);
-  const [qty, setQty] = useState<number | null>(entry ? entry.grams : 100);
+  // Stan początkowy ustawiany synchronicznie: edycja → zapisane wartości, nowy wpis → pierwsza porcja
+  const initial = (() => {
+    if (entry) {
+      const i = portions.findIndex((p, idx) => idx > 0 && p.label === entry.portionLabel);
+      return i > 0 && entry.portionQty ? { idx: i, qty: entry.portionQty } : { idx: 0, qty: entry.grams };
+    }
+    return portions.length > 1 ? { idx: 1, qty: 1 } : { idx: 0, qty: 100 };
+  })();
+  const [portionIdx, setPortionIdx] = useState(initial.idx);
+  const [qty, setQtyState] = useState<number | null>(initial.qty);
+  const touched = useRef(false);
+  const setQty = (v: number | null) => {
+    touched.current = true;
+    setQtyState(v);
+  };
   const [mealId, setMealId] = useState(entry?.meal ?? meal);
   const [fav, setFav] = useState(false);
 
   useEffect(() => {
     void isFavorite(food.id).then(setFav);
-    if (entry) {
-      const i = portions.findIndex((p) => p.label === entry.portionLabel);
-      if (i > 0 && entry.portionQty) {
-        setPortionIdx(i);
-        setQty(entry.portionQty);
-      }
-      return;
-    }
-    // Domyślnie: ostatnio użyta ilość, potem pierwsza porcja, potem 100 g
+    if (entry) return;
+    // Podpowiedź: ostatnio użyta ilość – tylko jeśli użytkownik jeszcze nic nie zmienił
     void getRecent(food.id).then((r) => {
-      if (r?.lastGrams) {
-        const i = portions.findIndex((p, idx) => idx > 0 && Math.abs(r.lastGrams / p.grams - Math.round(r.lastGrams / p.grams)) < 0.01);
-        if (i > 0) {
-          setPortionIdx(i);
-          setQty(round1(r.lastGrams / portions[i].grams));
-        } else setQty(round1(r.lastGrams));
-      } else if (portions.length > 1) {
-        setPortionIdx(1);
-        setQty(1);
+      if (!r?.lastGrams || touched.current) return;
+      const i = portions.findIndex((p, idx) => idx > 0 && Math.abs(r.lastGrams / p.grams - Math.round(r.lastGrams / p.grams)) < 0.01);
+      if (i > 0) {
+        setPortionIdx(i);
+        setQtyState(round1(r.lastGrams / portions[i].grams));
+      } else {
+        setPortionIdx(0);
+        setQtyState(round1(r.lastGrams));
       }
     });
   }, [food.id]);
@@ -128,6 +133,7 @@ export function FoodSheet({
                 onClick={() => {
                   // przelicz ilość tak, by zachować podobną wagę
                   const g = grams;
+                  touched.current = true;
                   setPortionIdx(i);
                   if (i === 0) setQty(round1(g || 100));
                   else setQty(g > 0 ? Math.max(0.5, Math.round((g / p.grams) * 2) / 2) : 1);
