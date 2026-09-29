@@ -9,8 +9,7 @@ import { goBack, routeStore } from '../router';
 import { bumpData } from '../settings';
 import { Icon } from '../ui/Icon';
 import { NumField } from '../ui/NumField';
-import { SearchResults } from '../ui/SearchResults';
-import { Sheet } from '../ui/Sheet';
+import { AmountSheet, IngredientPicker } from '../ui/Pickers';
 import { Topbar } from '../ui/Topbar';
 
 /** Przepis złożony z kilku składników – zapisywany jako "produkt" do dodawania porcjami. */
@@ -156,40 +155,3 @@ export function RecipeEditorView() {
   );
 }
 
-function IngredientPicker({ onClose, onPick }: { onClose: () => void; onPick: (f: Food) => void }) {
-  const [q, setQ] = useState('');
-  return (
-    <Sheet title="Wybierz składnik" onClose={onClose}>
-      <div class="searchbar">
-        <Icon name="search" />
-        <input class="input" type="search" placeholder="Szukaj produktu" value={q} autoFocus onInput={(e) => setQ((e.currentTarget as HTMLInputElement).value)} data-testid="ingredient-search" />
-      </div>
-      {q.trim() && <SearchResults q={q} onPick={(f) => onPick(f)} />}
-    </Sheet>
-  );
-}
-
-function AmountSheet({ food, initial, onClose, onSave }: { food: Food; initial: number; onClose: () => void; onSave: (g: number) => void }) {
-  const [grams, setGrams] = useState<number | null>(initial);
-  const unit = food.unit === 'ml' ? 'ml' : 'g';
-  return (
-    <Sheet title={food.name} onClose={onClose}>
-      <div class="stack">
-        {food.portions.length > 0 && (
-          <div class="chips">
-            {food.portions.map((p) => (
-              <button key={p.label} class="chip" aria-pressed={grams === p.grams} onClick={() => setGrams(p.grams)}>
-                {p.label} ({fmt0(p.grams)} {unit})
-              </button>
-            ))}
-          </div>
-        )}
-        <NumField label={`Ilość (${unit})`} value={grams} onChange={setGrams} suffix={unit} autoFocus testId="ingredient-grams" />
-        <p class="small muted">{grams ? `${fmt0(scale(food.per100, grams).kcal)} kcal` : ''}</p>
-        <button class="btn primary block" disabled={!grams || grams <= 0} onClick={() => onSave(round1(grams!))} data-testid="ingredient-save">
-          Zapisz składnik
-        </button>
-      </div>
-    </Sheet>
-  );
-}

@@ -17,6 +17,12 @@ jobs:
       - run: npm ci
       - run: npm run typecheck
       - run: npm test
+      - name: Worker – instalacja, typy i testy
+        working-directory: worker
+        run: |
+          npm ci
+          npm run typecheck
+          npm test
       - name: Instalacja Chromium dla Playwright
         run: npx playwright install --with-deps chromium
       - run: npm run test:e2e

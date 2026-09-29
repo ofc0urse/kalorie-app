@@ -1,0 +1,23 @@
+{
+  "name": "kalorie-ai-worker",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Backend AI dla aplikacji Kalorie – szacowanie kalorii ze zdjęcia i opisu przez Claude API",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.129.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "5.20260929.1",
+    "typescript": "5.9.3",
+    "vitest": "5.0.2",
+    "wrangler": "4.144.0"
+  }
+}

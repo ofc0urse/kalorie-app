@@ -10,6 +10,7 @@ import { FoodEditorView } from './views/FoodEditor';
 import { ProductsView } from './views/Products';
 import { RecipeEditorView } from './views/RecipeEditor';
 import { ScannerView } from './views/Scanner';
+import { AiEstimateView } from './views/AiEstimate';
 import { Onboarding } from './views/Onboarding';
 import { SettingsView } from './views/Settings';
 import { StatsView } from './views/Stats';
@@ -25,6 +26,7 @@ const ROUTES: Record<string, { view: ComponentType; tabbar: boolean }> = {
   '/produkt': { view: FoodEditorView, tabbar: false },
   '/przepis': { view: RecipeEditorView, tabbar: false },
   '/skaner': { view: ScannerView, tabbar: false },
+  '/ai': { view: AiEstimateView, tabbar: false },
 };
 
 export function App() {

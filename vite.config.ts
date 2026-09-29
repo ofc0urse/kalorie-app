@@ -51,7 +51,7 @@ export default defineConfig({
     sourcemap: false,
   },
   test: {
-    include: ['tests/unit/**/*.test.ts', 'worker/test/**/*.test.ts'],
+    include: ['tests/unit/**/*.test.ts'],
     environment: 'node',
   },
 });
