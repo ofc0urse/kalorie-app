@@ -18,7 +18,7 @@ Aplikacja do liczenia kalorii i makroskładników, działająca w przeglądarce 
   - własne produkty, przepisy z kilku składników, ulubione, ostatnio używane;
   - wyszukiwanie odporne na brak polskich znaków („jablko” znajduje „Jabłko”, „losos” znajduje „Łosoś”).
 - **Skaner kodów kreskowych**: aparat telefonu (ZXing dołączony do aplikacji, bo Safari nie ma `BarcodeDetector`) albo ręczne wpisanie kodu. Nieznany produkt dodajesz z etykiety, a przy następnym skanie aplikacja go rozpozna.
-- **Szacowanie kalorii ze zdjęcia** (Claude API przez Twój backend): zdjęcie z aparatu albo z galerii, kompresja do ok. 1024 px, lista składników z gramami, kaloriami, makro i poziomem pewności. Przed zapisaniem możesz wszystko poprawić. Jest też tryb „opisz posiłek słowami”.
+- **Szacowanie kalorii ze zdjęcia** (Gemini API przez Twój backend): zdjęcie z aparatu albo z galerii, kompresja do ok. 1024 px, lista składników z gramami, kaloriami, makro i poziomem pewności. Przed zapisaniem możesz wszystko poprawić. Jest też tryb „opisz posiłek słowami”.
 - **Cel**: kalkulator zapotrzebowania (wzór Mifflina-St Jeora) z poziomem aktywności i celem (redukcja, utrzymanie, masa). Aplikacja nie ustawi celu poniżej rozsądnego minimum (1200 kcal dla kobiet, 1500 kcal dla mężczyzn) ani deficytu większego niż 25%. Podział makro możesz ustawić sam.
 - **Kopia zapasowa**: eksport i import wszystkich danych do pliku JSON.
 - **PWA**: działa offline, ma jasny i ciemny motyw, obsługuje „notch” i pasek domowy iPhone'a (safe areas). Pola liczbowe mają 16 px i klawiaturę numeryczną z przecinkiem, więc iOS nie powiększa widoku.
@@ -42,17 +42,19 @@ Aplikacja jest budowana i publikowana automatycznie przez GitHub Actions (`.gith
 
 ---
 
-## 2. Wdrożenie backendu AI (Cloudflare Worker), krok po kroku
+## 2. Wdrożenie backendu AI (Cloudflare Worker + Gemini API), krok po kroku
 
-Szacowanie ze zdjęcia i z opisu wymaga małego backendu, który trzyma Twój klucz Claude API. **Klucz nigdy nie trafia do kodu aplikacji ani do repozytorium.** Jest zapisywany wyłącznie jako *secret* w Cloudflare. Reszta aplikacji działa bez backendu.
+Szacowanie ze zdjęcia i z opisu wymaga małego backendu, który trzyma Twój klucz **Gemini API** (Google AI Studio). **Klucz nigdy nie trafia do kodu aplikacji ani do repozytorium.** Jest zapisywany wyłącznie jako *secret* w Cloudflare. Reszta aplikacji działa bez backendu.
 
 Do wdrożenia nie potrzebujesz Maca. Wystarczy komputer z Windows lub Linuxem, albo GitHub Codespaces (terminal w przeglądarce: w repozytorium kliknij **Code → Codespaces → Create codespace**).
 
-### Krok 1: klucz Claude API
+### Krok 1: klucz Gemini API
 
-1. Załóż konto na **https://console.anthropic.com** i dodaj środki w **Billing** (płacisz za użycie).
-2. W **Settings → Limits** ustaw miesięczny limit wydatków, np. 5 USD. To zabezpieczenie przed niespodziankami.
-3. W **API Keys** kliknij **Create Key** i skopiuj klucz (zaczyna się od `sk-ant-`). Zachowaj go na chwilę, będzie potrzebny w kroku 4.
+1. Wejdź na **https://aistudio.google.com/apikey** i zaloguj się kontem Google.
+2. Kliknij **Create API key** (Utwórz klucz API). Jeśli pojawi się pytanie o projekt, wybierz istniejący albo utwórz nowy.
+3. Skopiuj klucz (zaczyna się zwykle od `AIza`). Zachowaj go na chwilę, będzie potrzebny w kroku 4.
+
+Darmowy pakiet w zupełności wystarczy do własnego użytku, ale ma limity liczby zapytań na minutę i na dzień (aktualne wartości: https://ai.google.dev/gemini-api/docs/rate-limits). Gdy limit się wyczerpie, aplikacja pokaże komunikat „Przekroczono limit darmowego pakietu Gemini” z informacją, kiedy spróbować ponownie. Jeśli do projektu w AI Studio podepniesz płatności (np. kredyty), limity rosną – kod nie wymaga zmian.
 
 ### Krok 2: konto Cloudflare
 
@@ -74,8 +76,8 @@ Załóż darmowe konto na **https://dash.cloudflare.com/sign-up**. Plan darmowy 
 # 1) zaloguj wranglera do Cloudflare (otworzy się przeglądarka)
 npx wrangler login
 
-# 2) zapisz klucz Claude API jako secret – wklej klucz, gdy wrangler o niego poprosi
-npx wrangler secret put ANTHROPIC_API_KEY
+# 2) zapisz klucz Gemini jako secret – wklej klucz, gdy wrangler o niego poprosi
+npx wrangler secret put GEMINI_API_KEY
 
 # 3) wdróż Workera
 npx wrangler deploy
@@ -90,7 +92,7 @@ Po wdrożeniu zobaczysz adres Workera, np.:
 https://kalorie-ai.<twoja-subdomena>.workers.dev
 ```
 
-Sprawdź, czy działa. Otwórz w przeglądarce `https://kalorie-ai.<twoja-subdomena>.workers.dev/health`. Powinno się pokazać `{"ok":true,"configured":true}`.
+Sprawdź, czy działa. Otwórz w przeglądarce `https://kalorie-ai.<twoja-subdomena>.workers.dev/health`. Powinno się pokazać `{"ok":true,"configured":true,...}` z nazwami modeli.
 
 ### Krok 5: CORS, czyli dla której strony Worker ma działać
 
@@ -98,7 +100,7 @@ W pliku `worker/wrangler.toml` zmienna `ALLOWED_ORIGINS` zawiera adres strony, k
 ```toml
 ALLOWED_ORIGINS = "https://ofc0urse.github.io"
 ```
-Jeśli robisz fork, wpisz tu swoją domenę GitHub Pages (tylko `https://nazwa.github.io`, bez `/kalorie-app`) i ponownie uruchom `npx wrangler deploy`. `localhost` jest dozwolony zawsze, żeby dało się testować lokalnie. Żądania z innych stron są odrzucane, zanim dotrą do Claude.
+Jeśli robisz fork, wpisz tu swoją domenę GitHub Pages (tylko `https://nazwa.github.io`, bez `/kalorie-app`) i ponownie uruchom `npx wrangler deploy`. `localhost` jest dozwolony zawsze, żeby dało się testować lokalnie. Żądania z innych stron są odrzucane, zanim dotrą do Gemini – nikt obcy nie zużyje Twojego limitu.
 
 ### Krok 6: podłączenie adresu Workera w aplikacji
 
@@ -106,18 +108,20 @@ Wybierz jeden sposób:
 - **Najprościej:** w aplikacji otwórz **Ustawienia → Źródła danych i AI → Adres backendu AI** i wklej adres Workera (bez `/estimate` na końcu).
 - **Na stałe w buildzie:** w GitHubie otwórz **Settings → Secrets and variables → Actions → zakładka Variables → New repository variable**, jako nazwę wpisz `AI_ENDPOINT`, a jako wartość adres Workera. Potem uruchom ponownie workflow wdrożenia. Adres Workera nie jest tajny, więc może być zmienną, a nie sekretem.
 
-### Ustawienia Workera (opcjonalnie)
+### Modele i ustawienia Workera
 
-W `worker/wrangler.toml`:
+Domyślnie aplikacja używa **Gemini 3.5 Flash-Lite** (`gemini-3.5-flash-lite`) – najszybszego i najtańszego modelu z obsługą obrazów. W aplikacji w **Ustawienia → Źródła danych i AI** możesz włączyć **„Dokładniej (Gemini Flash)”** – wtedy Worker używa **Gemini 3.8 Flash** (`gemini-3.8-flash`). Jest dokładniejszy, ale wolniejszy i ma niższy limit w darmowym pakiecie.
+
+Nazwy modeli są w `worker/wrangler.toml`. Gdy Google wyda nowsze wersje, zmień je tam i uruchom `npx wrangler deploy`:
 | Zmienna | Domyślnie | Opis |
 |---|---|---|
-| `MODEL` | `claude-opus-5-5` | Model Claude z obsługą obrazów. Tańsza alternatywa: `claude-sonnet-5-5`. |
-| `EFFORT` | `medium` | Wysiłek rozumowania: `low` (szybciej, taniej), `medium`, `high` (dokładniej). |
+| `MODEL_FAST` | `gemini-3.5-flash-lite` | Model domyślny. |
+| `MODEL_ACCURATE` | `gemini-3.8-flash` | Model dla opcji „Dokładniej”. |
 | `ALLOWED_ORIGINS` | GitHub Pages | Dozwolone strony (CORS), oddzielone przecinkami. |
 
-Limit zapytań: **10 na minutę na adres IP**, przez wbudowany limiter Cloudflare (sekcja `[[ratelimits]]`). Worker odrzuca też zdjęcia większe niż 1,5 MB, pliki niebędące JPEG/PNG/WebP (sprawdzane po zawartości) i opisy dłuższe niż 1000 znaków.
+Model zwraca wynik przez **structured output** (`responseMimeType: application/json` + `responseSchema`), więc odpowiedź zawsze ma format oczekiwany przez aplikację.
 
-**Koszt:** jedno zdjęcie to zwykle kilka centów (kilka tysięcy tokenów). Dokładne ceny znajdziesz na https://www.anthropic.com/pricing. Limit wydatków ustawiony w konsoli Anthropic chroni przed niespodziankami.
+Zabezpieczenia: limit **10 zapytań na minutę na adres IP** (wbudowany limiter Cloudflare, sekcja `[[ratelimits]]`); odrzucanie zdjęć większych niż 1,5 MB, plików niebędących JPEG/PNG/WebP (sprawdzane po zawartości) i opisów dłuższych niż 1000 znaków.
 
 Po zmianie kodu Workera wystarczy ponownie uruchomić `npx wrangler deploy` w folderze `worker`. Logi na żywo pokazuje `npx wrangler tail`.
 
@@ -141,7 +145,7 @@ Aktualizacje instalują się same. Gdy pojawi się nowa wersja, aplikacja pokaż
 - Dziennik, produkty, przepisy, waga i ustawienia są zapisane **tylko w przeglądarce na tym urządzeniu** (IndexedDB). Nie ma serwera z Twoimi danymi.
 - Do zewnętrznych usług trafiają tylko:
   - wyszukiwane frazy i kody kreskowe (do Open Food Facts i USDA);
-  - zdjęcia i opisy posiłków (do Twojego Workera, a przez niego do Claude API). Nie są zapisywane ani w aplikacji, ani w Workerze.
+  - zdjęcia i opisy posiłków (do Twojego Workera, a przez niego do Gemini API). Nie są zapisywane ani w aplikacji, ani w Workerze. Uwaga: w darmowym pakiecie Gemini API Google może wykorzystywać przesłane treści do ulepszania swoich usług – szczegóły w warunkach Gemini API (https://ai.google.dev/gemini-api/terms).
 - **Rób kopie zapasowe:** **Ustawienia → Kopia zapasowa → Eksportuj dane (JSON)**. Na iPhonie plik możesz zapisać w aplikacji Pliki lub na iCloud Drive. Import pozwala zastąpić obecne dane kopią albo je połączyć.
 - Safari może usunąć dane stron, których długo nie używasz. Aplikacja zainstalowana na ekranie początkowym jest pod tym względem bezpieczniejsza, a regularny eksport zabezpiecza dane w pełni.
 
@@ -165,7 +169,7 @@ npm run preview      # podgląd builda: http://localhost:4173
 Aby testować AI lokalnie, uruchom Workera w drugim terminalu:
 ```bash
 cd worker
-cp .dev.vars.example .dev.vars   # wpisz swój klucz (plik jest w .gitignore)
+cp .dev.vars.example .dev.vars   # wpisz swój klucz Gemini (plik jest w .gitignore)
 npm run dev                      # http://localhost:8787
 ```
 Następnie w aplikacji ustaw adres backendu na `http://localhost:8787`.
@@ -175,7 +179,7 @@ Następnie w aplikacji ustaw adres backendu na `http://localhost:8787`.
 ```bash
 npm test               # testy logiki (Vitest): kalkulator, wyszukiwanie, mapowanie API, IndexedDB
 npm run test:e2e       # testy end-to-end (Playwright) na widoku iPhone'a, z zamockowanymi API
-cd worker && npm test  # testy Workera: CORS, walidacja, limity, wywołanie Claude (atrapa)
+cd worker && npm test  # testy Workera: CORS, walidacja, limity, wywołanie Gemini i błąd 429 (atrapa)
 ```
 
 Testy e2e nie łączą się z prawdziwymi API: Open Food Facts, USDA i backend AI są zamockowane, a każde inne zapytanie zewnętrzne jest blokowane. Test skanera używa sztucznej kamery Chromium z nagraniem kodu EAN-13, więc ZXing naprawdę dekoduje obraz. Przed pierwszym uruchomieniem testów e2e na własnym komputerze wykonaj `npx playwright install chromium`.
@@ -193,12 +197,12 @@ src/
   ui/          komponenty (arkusze, pola, wykresy SVG, wyniki wyszukiwania)
   views/       ekrany: Dziennik, Dodaj, Skaner, AI, Produkty, Przepis, Statystyki, Ustawienia
   scanner.ts   aparat + BarcodeDetector / ZXing
-worker/        Cloudflare Worker (Claude API)
+worker/        Cloudflare Worker (Gemini API)
 tests/         unit (Vitest), e2e (Playwright), fixtures
 docs/PLAN.md   plan i architektura
 ```
 
-Stack: Vite, TypeScript, Preact, idb, vite-plugin-pwa (Workbox), @zxing/library, a w Workerze @anthropic-ai/sdk i Zod.
+Stack: Vite, TypeScript, Preact, idb, vite-plugin-pwa (Workbox), @zxing/library; Worker woła REST API Gemini bez dodatkowych bibliotek.
 
 ---
 

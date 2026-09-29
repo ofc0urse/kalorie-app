@@ -3,16 +3,12 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Backend AI dla aplikacji Kalorie – szacowanie kalorii ze zdjęcia i opisu przez Claude API",
+  "description": "Backend AI dla aplikacji Kalorie – szacowanie kalorii ze zdjęcia i opisu przez Gemini API",
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "0.129.0",
-    "zod": "4.6.5"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260929.1",

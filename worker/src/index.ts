@@ -1,18 +1,21 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { estimateMeal, type ClaudeClient } from './claude';
+import { estimateMeal } from './gemini';
+import { DEFAULT_MODEL_ACCURATE, DEFAULT_MODEL_FAST } from './models';
 import { corsHeaders, isAllowedOrigin } from './cors';
 import { HttpError, MAX_BODY_BYTES, validateInput } from './validate';
 
 export interface Env {
-  ANTHROPIC_API_KEY: string;
+  GEMINI_API_KEY: string;
   ALLOWED_ORIGINS: string;
-  MODEL?: string;
-  EFFORT?: string;
+  /** domyślny model (szybki, tani) */
+  MODEL_FAST?: string;
+  /** model dla opcji „dokładniej” */
+  MODEL_ACCURATE?: string;
   RATE_LIMITER?: RateLimit;
 }
 
+
 export interface Deps {
-  createClient: (env: Env) => ClaudeClient;
+  fetch: typeof fetch;
 }
 
 // Zapasowy limiter w pamięci (gdy brak wiązania RATE_LIMITER, np. lokalnie) – 10 zapytań/min na IP.
@@ -49,18 +52,21 @@ export function createHandler(deps: Deps) {
         return allowed ? new Response(null, { status: 204, headers: cors }) : new Response(null, { status: 403 });
       }
       if (url.pathname === '/health' && request.method === 'GET') {
-        return json({ ok: true, configured: !!env.ANTHROPIC_API_KEY }, 200, cors);
+        return json(
+          { ok: true, configured: !!env.GEMINI_API_KEY, models: { fast: env.MODEL_FAST || DEFAULT_MODEL_FAST, accurate: env.MODEL_ACCURATE || DEFAULT_MODEL_ACCURATE } },
+          200,
+          cors,
+        );
       }
       if (url.pathname !== '/estimate') return json({ error: 'Nie znaleziono.' }, 404, cors);
       if (request.method !== 'POST') return json({ error: 'Dozwolona metoda: POST.' }, 405, cors);
-      // Blokujemy wywołania z obcych stron (przeglądarka i tak zablokowałaby odpowiedź bez CORS,
-      // ale nie chcemy nawet wydawać pieniędzy na takie zapytania).
+      // Obce strony nie mogą zużywać Twojego limitu Gemini.
       if (!allowed) return json({ error: 'Niedozwolone źródło żądania.' }, 403);
 
       try {
         const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
         const ok = env.RATE_LIMITER ? (await env.RATE_LIMITER.limit({ key: ip })).success : memoryLimit(ip);
-        if (!ok) throw new HttpError(429, 'Za dużo zapytań. Odczekaj minutę.');
+        if (!ok) throw new HttpError(429, 'Za dużo zapytań. Odczekaj minutę.', 60);
 
         const len = Number(request.headers.get('Content-Length') ?? '0');
         if (len > MAX_BODY_BYTES) throw new HttpError(413, 'Żądanie jest za duże.');
@@ -73,13 +79,17 @@ export function createHandler(deps: Deps) {
           throw new HttpError(400, 'Nieprawidłowy JSON.');
         }
         const input = validateInput(body);
-        if (!env.ANTHROPIC_API_KEY) throw new HttpError(500, 'Backend nie ma ustawionego klucza ANTHROPIC_API_KEY.');
+        if (!env.GEMINI_API_KEY) throw new HttpError(500, 'Backend nie ma ustawionego klucza GEMINI_API_KEY.');
 
-        const effort = env.EFFORT === 'low' || env.EFFORT === 'high' ? env.EFFORT : 'medium';
-        const result = await estimateMeal(deps.createClient(env), input, { model: env.MODEL || 'claude-opus-5-5', effort });
+        const accurate = input.quality === 'accurate';
+        const model = accurate ? env.MODEL_ACCURATE || DEFAULT_MODEL_ACCURATE : env.MODEL_FAST || DEFAULT_MODEL_FAST;
+        const result = await estimateMeal(input, { apiKey: env.GEMINI_API_KEY, model, accurate }, deps.fetch);
         return json(result, 200, cors);
       } catch (e) {
-        if (e instanceof HttpError) return json({ error: e.message }, e.status, cors);
+        if (e instanceof HttpError) {
+          const extra: Record<string, string> = e.retryAfter ? { 'Retry-After': String(e.retryAfter) } : {};
+          return json({ error: e.message }, e.status, { ...cors, ...extra });
+        }
         console.error('estimate failed', e);
         return json({ error: 'Nieoczekiwany błąd serwera.' }, 500, cors);
       }
@@ -87,6 +97,4 @@ export function createHandler(deps: Deps) {
   };
 }
 
-export default createHandler({
-  createClient: (env) => new Anthropic({ apiKey: env.ANTHROPIC_API_KEY, maxRetries: 2, timeout: 90_000 }),
-}) satisfies ExportedHandler<Env>;
+export default createHandler({ fetch: (...args) => fetch(...args) }) satisfies ExportedHandler<Env>;

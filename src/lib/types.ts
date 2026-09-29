@@ -112,6 +112,8 @@ export interface Settings {
   waterStepMl: number;
   meals: MealDef[];
   aiEndpoint: string;
+  /** true = dokładniejszy model (Gemini Flash) zamiast Flash-Lite */
+  aiAccurate: boolean;
   usdaApiKey: string;
   offPreferPoland: boolean;
   theme: 'system' | 'light' | 'dark';

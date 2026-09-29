@@ -50,7 +50,7 @@ test.beforeEach(async ({ page }) => {
 });
 
 test('zdjęcie → kompresja → backend → edycja → dziennik', async ({ page }) => {
-  let body: { mode: string; image: string; text?: string } | null = null;
+  let body: { mode: string; image: string; text?: string; quality?: string } | null = null;
   await page.route('https://ai.test.invalid/estimate', async (route) => {
     if (route.request().method() === 'OPTIONS') return route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': 'content-type' } });
     body = route.request().postDataJSON();
@@ -70,6 +70,7 @@ test('zdjęcie → kompresja → backend → edycja → dziennik', async ({ page
 
   // wysłano JPEG w base64 (bez prefiksu data:), z kontekstem
   expect(body!.mode).toBe('photo');
+  expect(body!.quality).toBe('fast');
   expect(body!.text).toBe('smażone na oleju');
   const img = Buffer.from(body!.image, 'base64');
   expect([img[0], img[1], img[2]]).toEqual([0xff, 0xd8, 0xff]);
@@ -102,10 +103,15 @@ test('opis słowami i błąd backendu', async ({ page }) => {
   await page.route('https://ai.test.invalid/estimate', async (route) => {
     calls++;
     if (calls === 1) {
-      return route.fulfill({ status: 429, contentType: 'application/json', headers: { 'access-control-allow-origin': '*' }, body: JSON.stringify({ error: 'Za dużo zapytań. Odczekaj minutę.' }) });
+      return route.fulfill({
+        status: 429,
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify({ error: 'Przekroczono limit darmowego pakietu Gemini. Spróbuj ponownie za ok. 37 s.' }),
+      });
     }
     const req = route.request().postDataJSON();
-    expect(req).toEqual({ mode: 'text', text: 'dwa jajka sadzone na maśle' });
+    expect(req).toEqual({ mode: 'text', text: 'dwa jajka sadzone na maśle', quality: 'fast' });
     await route.fulfill({
       contentType: 'application/json',
       headers: { 'access-control-allow-origin': '*' },
@@ -116,7 +122,7 @@ test('opis słowami i błąd backendu', async ({ page }) => {
   await page.goto('/#/ai?m=breakfast&tryb=opis');
   await page.getByTestId('ai-description').fill('dwa jajka sadzone na maśle');
   await page.getByTestId('ai-run').click();
-  await expect(page.getByTestId('ai-error')).toContainText('Za dużo zapytań');
+  await expect(page.getByTestId('ai-error')).toContainText('Przekroczono limit darmowego pakietu Gemini');
   await page.getByTestId('ai-run').click();
   await expect(page.getByTestId('ai-total')).toHaveText('270 kcal');
   await page.getByTestId('ai-save').click();
@@ -131,4 +137,24 @@ test('brak adresu backendu → wskazówka', async ({ page }) => {
   await page.goto('/#/ai');
   await expect(page.getByTestId('ai-no-endpoint')).toBeVisible();
   await expect(page.getByTestId('ai-run')).toBeDisabled();
+});
+
+test('opcja „Dokładniej” wysyła quality=accurate', async ({ page }) => {
+  let quality = '';
+  await page.route('https://ai.test.invalid/estimate', async (route) => {
+    quality = route.request().postDataJSON().quality;
+    await route.fulfill({
+      contentType: 'application/json',
+      headers: { 'access-control-allow-origin': '*' },
+      body: JSON.stringify({ is_food: true, meal_name: 'Jabłko', notes: '', items: [{ name: 'Jabłko', grams: 180, kcal: 94, protein: 0.5, fat: 0.4, carbs: 20.5, fiber: 4.3, confidence: 'high' }] }),
+    });
+  });
+  await openApp(page);
+  await page.goto('/#/ustawienia');
+  await page.getByTestId('ai-accurate').check();
+  await page.goto('/#/ai?tryb=opis');
+  await page.getByTestId('ai-description').fill('jedno jabłko');
+  await page.getByTestId('ai-run').click();
+  await expect(page.getByTestId('ai-total')).toHaveText('94 kcal');
+  expect(quality).toBe('accurate');
 });

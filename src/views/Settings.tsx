@@ -314,7 +314,20 @@ function IntegrationsSection({ settings }: { settings: Settings }) {
             data-testid="ai-endpoint"
           />
         </label>
-        <p class="tiny muted">Potrzebny do szacowania kalorii ze zdjęcia i z opisu. Instrukcja wdrożenia jest w README repozytorium.</p>
+        <p class="tiny muted">Potrzebny do szacowania kalorii ze zdjęcia i z opisu (Gemini API). Instrukcja wdrożenia jest w README repozytorium.</p>
+        <label class="check">
+          <input
+            type="checkbox"
+            checked={settings.aiAccurate}
+            onChange={(e) => saveSettings({ aiAccurate: (e.currentTarget as HTMLInputElement).checked })}
+            data-testid="ai-accurate"
+          />
+          <span>
+            Dokładniej (Gemini Flash)
+            <br />
+            <small class="tiny muted">Wolniej i z niższym limitem darmowego pakietu. Domyślnie: Gemini Flash-Lite.</small>
+          </span>
+        </label>
         <label class="field">
           <span>Klucz API USDA FoodData Central (opcjonalny)</span>
           <input

@@ -6,6 +6,8 @@ export type MediaType = 'image/jpeg' | 'image/png' | 'image/webp';
 
 export interface EstimateInput {
   mode: 'photo' | 'text';
+  /** 'accurate' = Gemini Flash, domyślnie 'fast' = Flash-Lite */
+  quality: 'fast' | 'accurate';
   image?: string;
   mediaType?: MediaType;
   text?: string;
@@ -15,6 +17,8 @@ export class HttpError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    /** sekundy do ponowienia (nagłówek Retry-After) */
+    public readonly retryAfter?: number,
   ) {
     super(message);
   }
@@ -40,12 +44,13 @@ export function validateInput(body: unknown): EstimateInput {
   const b = body as Record<string, unknown>;
   const mode = b.mode;
   if (mode !== 'photo' && mode !== 'text') throw new HttpError(400, 'Pole "mode" musi mieć wartość "photo" albo "text".');
+  const quality = b.quality === 'accurate' ? 'accurate' : 'fast';
   const text = typeof b.text === 'string' ? b.text.trim() : undefined;
   if (text && text.length > MAX_TEXT_CHARS) throw new HttpError(400, `Opis może mieć najwyżej ${MAX_TEXT_CHARS} znaków.`);
 
   if (mode === 'text') {
     if (!text || text.length < 3) throw new HttpError(400, 'Opisz posiłek (co najmniej 3 znaki).');
-    return { mode, text };
+    return { mode, quality, text };
   }
 
   let image = typeof b.image === 'string' ? b.image : '';
@@ -58,5 +63,5 @@ export function validateInput(body: unknown): EstimateInput {
   if (bytes < 500) throw new HttpError(400, 'Zdjęcie jest za małe lub uszkodzone.');
   const detected = sniff(image);
   if (!detected) throw new HttpError(415, 'Obsługiwane formaty zdjęć: JPEG, PNG, WebP.');
-  return { mode, image, mediaType: detected, text };
+  return { mode, quality, image, mediaType: detected, text };
 }

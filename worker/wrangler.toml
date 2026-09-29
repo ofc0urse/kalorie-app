@@ -1,19 +1,18 @@
-# Cloudflare Worker – backend AI aplikacji Kalorie.
-# Klucz Claude API ustawiasz jako SECRET (nigdy w tym pliku!):
-#   npx wrangler secret put ANTHROPIC_API_KEY
+# Cloudflare Worker – backend AI aplikacji Kalorie (Gemini API z Google AI Studio).
+# Klucz Gemini ustawiasz jako SECRET (nigdy w tym pliku!):
+#   npx wrangler secret put GEMINI_API_KEY
 name = "kalorie-ai"
 main = "src/index.ts"
 compatibility_date = "2026-09-01"
-compatibility_flags = ["nodejs_compat"]
 
 [vars]
 # Dozwolone strony (CORS), oddzielone przecinkami. Localhost jest dozwolony zawsze (do testów).
 # Zmień "ofc0urse" na swoją nazwę użytkownika GitHub, jeśli robisz fork.
 ALLOWED_ORIGINS = "https://ofc0urse.github.io"
-# Model Claude z obsługą obrazów
-MODEL = "claude-opus-5-5"
-# Wysiłek rozumowania: low | medium | high (wyższy = dokładniej, ale wolniej i drożej)
-EFFORT = "medium"
+# Domyślny model: szybki i tani Gemini Flash-Lite (obsługuje obrazy)
+MODEL_FAST = "gemini-3.5-flash-lite"
+# Model dla opcji „Dokładniej” w Ustawieniach aplikacji
+MODEL_ACCURATE = "gemini-3.8-flash"
 
 # Limit zapytań na adres IP: 10 na minutę (wbudowany limiter Cloudflare).
 [[ratelimits]]

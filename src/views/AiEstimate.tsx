@@ -84,6 +84,7 @@ export function AiEstimateView() {
       const r = await estimateWithAi(
         settings.aiEndpoint,
         mode === 'photo' ? { mode: 'photo', image: photo!.base64, text: context.trim() || undefined } : { mode: 'text', text: description.trim() },
+        settings.aiAccurate ? 'accurate' : 'fast',
         ctrl.current.signal,
       );
       setResult(r);
@@ -134,7 +135,7 @@ export function AiEstimateView() {
       <div class="notice" role="note">
         <Icon name="info" class="sm" />
         <div>
-          <b>To tylko szacunek.</b> AI ocenia porcje na oko – przed zapisaniem sprawdź i popraw gramy. Zdjęcie trafia do Twojego backendu i do Claude API (Anthropic), nie jest zapisywane w aplikacji.
+          <b>To tylko szacunek.</b> AI ocenia porcje na oko – przed zapisaniem sprawdź i popraw gramy. Zdjęcie trafia do Twojego backendu i do Gemini API (Google), nie jest zapisywane w aplikacji.
         </div>
       </div>
 

@@ -19,10 +19,11 @@ export interface AiEstimate {
 
 export class AiError extends Error {}
 
-/** Wywołuje backend (Cloudflare Worker). Klucz Claude API jest tylko w Workerze. */
+/** Wywołuje backend (Cloudflare Worker). Klucz Gemini API jest tylko w Workerze. */
 export async function estimateWithAi(
   endpoint: string,
   payload: { mode: 'photo'; image: string; text?: string } | { mode: 'text'; text: string },
+  quality: 'fast' | 'accurate' = 'fast',
   signal?: AbortSignal,
 ): Promise<AiEstimate> {
   if (!endpoint) throw new AiError('Nie ustawiono adresu backendu AI. Wpisz go w Ustawieniach → Źródła danych i AI.');
@@ -35,7 +36,7 @@ export async function estimateWithAi(
     res = await fetch(`${endpoint.replace(/\/+$/, '')}/estimate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, quality }),
       signal: ctrl.signal,
     });
   } catch (e) {

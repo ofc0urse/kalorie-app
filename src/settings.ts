@@ -20,6 +20,7 @@ export const DEFAULT_SETTINGS: Settings = {
   waterStepMl: 250,
   meals: DEFAULT_MEALS,
   aiEndpoint: (import.meta.env.VITE_AI_ENDPOINT as string | undefined) ?? '',
+  aiAccurate: false,
   usdaApiKey: '',
   offPreferPoland: true,
   theme: 'system',
