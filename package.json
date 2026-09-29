@@ -1,0 +1,30 @@
+{
+  "name": "kalorie-app",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Licznik kalorii jako PWA – dziennik, baza produktów, skaner kodów, szacowanie ze zdjęcia",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "dependencies": {
+    "@zxing/library": "0.23.0",
+    "idb": "8.0.3",
+    "preact": "10.29.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.56.1",
+    "@preact/preset-vite": "2.10.6",
+    "fake-indexeddb": "6.2.5",
+    "typescript": "5.9.3",
+    "vite": "8.3.1",
+    "vite-plugin-pwa": "1.3.0",
+    "vitest": "5.0.2"
+  }
+}
