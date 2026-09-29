@@ -9,6 +9,7 @@ import { DiaryView } from './views/Diary';
 import { FoodEditorView } from './views/FoodEditor';
 import { ProductsView } from './views/Products';
 import { RecipeEditorView } from './views/RecipeEditor';
+import { ScannerView } from './views/Scanner';
 import { Onboarding } from './views/Onboarding';
 import { SettingsView } from './views/Settings';
 import { StatsView } from './views/Stats';
@@ -23,6 +24,7 @@ const ROUTES: Record<string, { view: ComponentType; tabbar: boolean }> = {
   '/produkty': { view: ProductsView, tabbar: true },
   '/produkt': { view: FoodEditorView, tabbar: false },
   '/przepis': { view: RecipeEditorView, tabbar: false },
+  '/skaner': { view: ScannerView, tabbar: false },
 };
 
 export function App() {

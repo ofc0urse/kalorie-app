@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import { BASIC_FOODS } from '../data/basicFoods';
 import { deleteFood, getFood, putFood } from '../db/db';
+import { normalizeBarcode } from '../lib/barcode';
 import { fmt0, kcalFromMacros, round1 } from '../lib/nutrition';
 import { useStore } from '../lib/store';
 import { uid } from '../lib/text';
@@ -71,7 +72,7 @@ export function FoodEditorView() {
       source: 'custom',
       name: name.trim(),
       brand: brand.trim() || undefined,
-      barcode: barcode.trim() || undefined,
+      barcode: barcode.trim() ? normalizeBarcode(barcode) : undefined,
       per100: {
         kcal: round1(per100.kcal),
         protein: round1(per100.protein),
