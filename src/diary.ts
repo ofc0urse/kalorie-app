@@ -1,8 +1,10 @@
 import {
   deleteEntries,
   entriesForDate,
+  getFood,
   putEntries,
   putEntry,
+  putFood,
   touchRecent,
 } from './db/db';
 import { uid } from './lib/text';
@@ -33,6 +35,7 @@ export async function addEntry(input: {
   };
   await putEntry(entry);
   await touchRecent(entry.food, entry.grams);
+  await rememberOnlineFood(input.food);
   bumpData();
   if (!input.silent) {
     toast(`Dodano: ${entry.food.name}`, {
@@ -106,6 +109,13 @@ export async function copyMeal(fromDate: string, fromMeal: string | null, toDate
     `Skopiowano ${src.length} ${plural(src.length, 'pozycję', 'pozycje', 'pozycji')}`,
   );
   return src.length;
+}
+
+/** Produkty z OFF/USDA zapisujemy lokalnie – będą dostępne offline i dla skanera. */
+async function rememberOnlineFood(f: Food): Promise<void> {
+  if (f.source !== 'off' && f.source !== 'usda') return;
+  const existing = await getFood(f.id);
+  if (!existing) await putFood(f);
 }
 
 /** Nie zapisujemy w dzienniku zbędnych pól. */

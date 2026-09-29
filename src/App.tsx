@@ -6,6 +6,9 @@ import { Toast } from './ui/Toast';
 import { UpdateBanner } from './ui/UpdateBanner';
 import { AddView } from './views/Add';
 import { DiaryView } from './views/Diary';
+import { FoodEditorView } from './views/FoodEditor';
+import { ProductsView } from './views/Products';
+import { RecipeEditorView } from './views/RecipeEditor';
 import { Onboarding } from './views/Onboarding';
 import { SettingsView } from './views/Settings';
 import { StatsView } from './views/Stats';
@@ -17,6 +20,9 @@ const ROUTES: Record<string, { view: ComponentType; tabbar: boolean }> = {
   '/dodaj': { view: AddView, tabbar: false },
   '/statystyki': { view: StatsView, tabbar: true },
   '/ustawienia': { view: SettingsView, tabbar: true },
+  '/produkty': { view: ProductsView, tabbar: true },
+  '/produkt': { view: FoodEditorView, tabbar: false },
+  '/przepis': { view: RecipeEditorView, tabbar: false },
 };
 
 export function App() {

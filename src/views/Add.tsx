@@ -1,9 +1,8 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
-import { allFavorites, recentFoods, type FavoriteRow, type RecentRow } from '../db/db';
+import { useEffect, useState } from 'preact/hooks';
+import { allFavorites, allFoods, allRecipes, recentFoods, type FavoriteRow, type RecentRow } from '../db/db';
 import { today } from '../lib/date';
-import { fmt0 } from '../lib/nutrition';
+import { recipeToFood } from '../lib/nutrition';
 import { useStore } from '../lib/store';
-import { matchScore } from '../lib/text';
 import type { Food } from '../lib/types';
 import { goBack, navigate, routeStore } from '../router';
 import { dataVersion, settingsStore } from '../settings';
@@ -11,9 +10,10 @@ import { diaryDate } from '../uiState';
 import { FoodSheet } from '../ui/FoodSheet';
 import { Icon } from '../ui/Icon';
 import { QuickAddSheet } from '../ui/QuickAddSheet';
-import { SourceBadge } from '../ui/SourceBadge';
+import { SearchResults } from '../ui/SearchResults';
+import { FoodList } from '../ui/FoodList';
 
-type Tab = 'recent' | 'fav';
+type Tab = 'recent' | 'fav' | 'mine';
 
 export function AddView() {
   const route = useStore(routeStore);
@@ -28,23 +28,17 @@ export function AddView() {
   const [selected, setSelected] = useState<Food | null>(null);
   const [quick, setQuick] = useState(false);
 
+  const [mine, setMine] = useState<Food[]>([]);
   useEffect(() => {
     void recentFoods(40).then(setRecents);
     void allFavorites().then(setFavs);
+    void (async () => {
+      const [foods, recipes] = await Promise.all([allFoods(), allRecipes()]);
+      setMine([...recipes.map(recipeToFood), ...foods.filter((f) => f.source === 'custom').sort((a, b) => a.name.localeCompare(b.name, 'pl'))]);
+    })();
   }, [version]);
 
   const mealName = settings.meals.find((m) => m.id === meal)?.name ?? 'Posiłek';
-  const localHits = useMemo(() => {
-    if (!q.trim()) return [];
-    const pool = new Map<string, Food>();
-    for (const r of recents) pool.set(r.food.id, r.food);
-    for (const f of favs) pool.set(f.food.id, f.food);
-    return [...pool.values()]
-      .map((f) => ({ f, s: matchScore(`${f.name} ${f.brand ?? ''}`, q) }))
-      .filter((x) => x.s > 0)
-      .sort((a, b) => b.s - a.s)
-      .map((x) => x.f);
-  }, [q, recents, favs]);
 
   const afterAdd = () => {
     diaryDate.set(date);
@@ -123,9 +117,7 @@ export function AddView() {
       )}
 
       {q ? (
-        <section class="mt">
-          <FoodList foods={localHits} onPick={setSelected} empty="Brak wyników wśród ostatnich i ulubionych." />
-        </section>
+        <SearchResults q={q} onPick={setSelected} onCreate={(name) => navigate('/produkt', { nazwa: name, d: date, m: meal })} />
       ) : (
         <>
           <div class="seg mt" role="group" aria-label="Lista">
@@ -135,53 +127,50 @@ export function AddView() {
             <button aria-pressed={tab === 'fav'} onClick={() => setTab('fav')}>
               Ulubione
             </button>
+            <button aria-pressed={tab === 'mine'} onClick={() => setTab('mine')}>
+              Moje
+            </button>
           </div>
           <section class="card mt" style={{ padding: '4px 12px' }}>
             {tab === 'recent' && (
               <FoodList foods={recents.map((r) => r.food)} onPick={setSelected} empty="Tu pojawią się ostatnio dodawane produkty." />
             )}
             {tab === 'fav' && <FoodList foods={favs.map((f) => f.food)} onPick={setSelected} empty="Oznacz produkt gwiazdką, aby trafił do ulubionych." />}
+            {tab === 'mine' && (
+              <>
+                <FoodList foods={mine} onPick={setSelected} empty="Nie masz jeszcze własnych produktów ani przepisów." />
+                <div class="row" style={{ padding: '8px 0' }}>
+                  <button class="btn small outline grow" onClick={() => navigate('/produkt', { d: date, m: meal })}>
+                    <Icon name="plus" class="sm" /> Produkt
+                  </button>
+                  <button class="btn small outline grow" onClick={() => navigate('/przepis')}>
+                    <Icon name="pot" class="sm" /> Przepis
+                  </button>
+                </div>
+              </>
+            )}
           </section>
         </>
       )}
 
-      {selected && <FoodSheet food={selected} date={date} meal={meal} onClose={() => setSelected(null)} onAdded={afterAdd} />}
+      {selected && (
+        <FoodSheet
+          food={selected}
+          date={date}
+          meal={meal}
+          onClose={() => setSelected(null)}
+          onAdded={afterAdd}
+          onEditFood={(f) => {
+            setSelected(null);
+            navigate('/produkt', { id: f.id, d: date, m: meal });
+          }}
+        />
+      )}
       {quick && <QuickAddSheet date={date} meal={meal} onClose={() => setQuick(false)} onAdded={afterAdd} />}
       <p class="tiny muted center mt">
         Dodajesz do: {mealName}, {date === today() ? 'dzisiaj' : date}
       </p>
     </div>
-  );
-}
-
-export function FoodList({ foods, onPick, empty }: { foods: Food[]; onPick: (f: Food) => void; empty?: string }) {
-  if (!foods.length) return empty ? <p class="empty small">{empty}</p> : null;
-  return (
-    <div class="list">
-      {foods.map((f) => (
-        <FoodRow key={f.id} food={f} onPick={onPick} />
-      ))}
-    </div>
-  );
-}
-
-export function FoodRow({ food, onPick }: { food: Food; onPick: (f: Food) => void }) {
-  const unit = food.unit === 'ml' ? 'ml' : 'g';
-  const p = food.portions?.[0];
-  return (
-    <button class="list-item" onClick={() => onPick(food)} data-testid="food-row">
-      <div class="grow">
-        <div class="title ellipsis">
-          {food.name} <SourceBadge source={food.source} />
-        </div>
-        <div class="sub ellipsis">
-          {food.brand ? `${food.brand} · ` : ''}
-          {fmt0(food.per100.kcal)} kcal / 100 {unit}
-          {p ? ` · ${p.label} ${fmt0(p.grams)} ${unit}` : ''}
-        </div>
-      </div>
-      <Icon name="plus" class="sm accent" />
-    </button>
   );
 }
 

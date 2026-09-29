@@ -519,3 +519,5 @@ p { margin: 0; }
 .rot90 { transform: rotate(90deg); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme='light']) .toast { background: #2a302b; border: 1px solid #3b433c; } }
 :root[data-theme='dark'] .toast { background: #2a302b; border: 1px solid #3b433c; }
+input[type='search']::-webkit-search-cancel-button,
+input[type='search']::-webkit-search-decoration { -webkit-appearance: none; appearance: none; }

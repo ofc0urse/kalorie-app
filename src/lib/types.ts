@@ -27,6 +27,9 @@ export interface Food {
   portions: Portion[];
   /** 'ml' dla płynów – wtedy "g" w interfejsie to ml */
   unit?: 'g' | 'ml';
+  /** dodatkowe nazwy do wyszukiwania (np. "kartofle") */
+  aliases?: string[];
+  imageUrl?: string;
   createdAt?: number;
   updatedAt?: number;
 }
